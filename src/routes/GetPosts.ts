@@ -27,10 +27,10 @@ const createPostSchema = {
 export async function handleGetPosts(req: Request, res: Response, next: NextFunction) {
     let targetId: string;
 
-    if(req.params.id != null)
-        targetId = req.params.id;
-    else
+    if(req.params.id == "@me")
         targetId = (req as Request & WithT2Session).session.id;
+    else
+        targetId = req.params.user;
 
     if(!targetId)
         throw new Error("Invalid user.");

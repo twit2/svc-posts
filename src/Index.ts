@@ -22,8 +22,8 @@ app.use(SessionVerifierMiddleware.handle);
 // Routes
 // ------------------------------------------------
 app.post('/', handleCreatePost);
-app.get('/', handleGetPosts);
 app.get('/:user/:page', handleGetPosts);
+app.get('/@me', handleGetPosts);
 
 app.use(ErrorHandlingMiddleware.handle);
 
