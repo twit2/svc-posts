@@ -5,19 +5,6 @@ import { PostsMgr } from "../PostsMgr";
 import Ajv from "ajv";
 import { PostRetrieveOp } from "../op/PostRetrieveOp";
 
-const ajv = new Ajv();
-
-const createPostSchema = {
-    type: "object",
-    properties: {
-        page: { type: "number" },
-        userId: { type: "string", minLength: Limits.general.hard.min, maxLength:Limits.general.hard.max }
-    },
-    required: ["page", "userId"],
-    additionalProperties: false
-}
-
-
 /**
  * Handles the post retrieval route.
  * @param req The request object.
@@ -41,12 +28,6 @@ export async function handleGetPosts(req: Request, res: Response, next: NextFunc
         userId: targetId,
         page: parseInt((req.params as any).page)
     };
-
-    // Verify schema
-    if(!ajv.validate(createPostSchema, retrieveOp)) {
-        res.statusCode = 400;
-        return res.end(JSON.stringify(APIRespConstructor.fromCode(APIResponseCodes.INVALID_REQUEST_BODY)));
-    }
 
     const posts = await PostsMgr.getPosts(retrieveOp);
     res.send(APIRespConstructor.success(posts));
