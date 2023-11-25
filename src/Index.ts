@@ -5,6 +5,7 @@ import { PostsWorker } from './PostsWorker';
 import { PostsStore } from './PostsStore';
 import { handleCreatePost } from './routes/CreatePost';
 import { handleGetPosts } from './routes/GetPosts';
+require('express-async-errors');
 
 // Load ENV parameters
 configDotenv();
