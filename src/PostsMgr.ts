@@ -1,4 +1,4 @@
-import { APIError, APIResponseCodes, Limits, generateId } from "@twit2/std-library";
+import { APIError, APIResponseCodes, Limits, PaginatedAPIData, generateId } from "@twit2/std-library";
 import { PostsStore } from "./PostsStore";
 import { PostInsertOp } from "./op/PostInsertOp";
 import { Post } from "./types/Post";
@@ -9,6 +9,7 @@ import Ajv from "ajv";
 let authRPC : RPCClient;
 
 const ajv = new Ajv();
+const PAGE_SIZE = 10;
 
 const createPostSchema = {
     type: "object",
@@ -64,12 +65,16 @@ async function createPost(op: PostInsertOp): Promise<Post> {
  * Gets posts.
  * @param op The operation params.
  */
-async function getPosts(op: PostRetrieveOp) {
+async function getPosts(op: PostRetrieveOp): Promise<PaginatedAPIData<Post>> {
     // Validate the schema to ensure data is correct
     if(!ajv.validate(getPostSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
-    return await PostsStore.getPosts(op.page, 10, op.userId);
+    return {
+        currentPage: -1,
+        pageSize: PAGE_SIZE,
+        data: await PostsStore.getPosts(op.page, PAGE_SIZE, op.userId)
+    };
 }
 
 /**
