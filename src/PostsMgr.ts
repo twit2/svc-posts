@@ -72,8 +72,17 @@ async function getPosts(op: PostRetrieveOp) {
     return await PostsStore.getPosts(op.page, 10, op.userId);
 }
 
+/**
+ * Gets a post by ID.
+ * @param id The ID of the post to get.
+ */
+async function getPostById(id: string) {
+    return PostsStore.findPostById(id);
+}
+
 export const PostsMgr = {
     prepareRPC,
     createPost,
-    getPosts
+    getPosts,
+    getPostById
 }
