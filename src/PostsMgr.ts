@@ -6,6 +6,7 @@ import { RPCClient } from "@twit2/std-library/dist/comm/rpc/RPCClient";
 import { PostRetrieveOp } from "./op/PostRetrieveOp";
 import Ajv from "ajv";
 import { PostDeleteOp } from "./op/PostDeleteOp";
+import { PostEditOp } from "./op/PostUpdateOp";
 
 let authRPC : RPCClient;
 
@@ -20,6 +21,17 @@ const createPostSchema = {
         authorId: { type: ["string"] }
     },
     required: ["textContent"],
+    additionalProperties: false
+};
+
+const updatePostSchema = {
+    type: "object",
+    properties: {
+        textContent: { type: "string", minLength: Limits.posts.tcontent.min, maxLength: Limits.posts.tcontent.max },
+        id: { type: ["string"] },
+        authorId: { type: ["string"] }
+    },
+    required: ["textContent", "id", "authorId"],
     additionalProperties: false
 };
 
@@ -88,7 +100,7 @@ async function getPostById(id: string) {
 
 /**
  * Deletes a post.
- * @param id The ID of the post to get.
+ * @param id The operation.
  */
 async function deletePost(op: PostDeleteOp) {
     const post = await getPostById(op.id);
@@ -109,10 +121,31 @@ async function deletePost(op: PostDeleteOp) {
     await PostsStore.deletePost(op.id);
 }
 
+/**
+ * Edits a post.
+ * @param op The operation.
+ */
+async function editPost(op: PostEditOp) {
+    const post = await getPostById(op.id);
+
+    if(!post)
+        throw APIError.fromCode(APIResponseCodes.NOT_FOUND);
+
+    // Check if post belongs to user
+    if(post.authorId !== op.authorId)
+        throw APIError.fromCode(APIResponseCodes.ACCESS_DENIED);
+
+    if(!ajv.validate(updatePostSchema, op))
+        throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
+
+    return await PostsStore.editPost(op.id, op.textContent);
+}
+
 export const PostsMgr = {
     prepareRPC,
     createPost,
     deletePost,
     getPosts,
+    editPost,
     getPostById
 }

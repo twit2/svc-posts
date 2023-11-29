@@ -51,7 +51,32 @@ async function findPostById(id: string): Promise<Post | null> {
  * Gets posts.
  */
 async function getPosts(page: number, limit: number, userId: string) {
-    return await PostModel.find({ authorId: userId }).sort({ datePosted: -1 }).skip(page * limit).limit(limit);
+    return await PostModel.find({ authorId: userId, replyToId: undefined }).sort({ datePosted: -1 }).skip(page * limit).limit(limit);
+}
+
+/**
+ * Gets comments.
+ */
+async function getPostComments(page: number, limit: number, postId: string) {
+    return await PostModel.find({ replyToId: postId }).sort({ datePosted: -1 }).skip(page * limit).limit(limit);
+}
+
+/**
+ * Edits the text content of the post.
+ * @param id The ID of the post to edit
+ * @param textContent The new content to place.
+ */
+async function editPost(id: string, textContent: string) {
+    const post = await PostModel.findOne({ id });
+    
+    if(!post)
+        throw new Error("Post does not exist.");
+
+    post.textContent = textContent;
+    post.dateEdited = new Date();
+    
+    await post.save();
+    return post.toJSON();
 }
 
 export const PostsStore = {
@@ -59,5 +84,7 @@ export const PostsStore = {
     init,
     createPost,
     deletePost,
+    editPost,
+    getPostComments,
     findPostById
 }
