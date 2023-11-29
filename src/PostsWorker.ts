@@ -1,6 +1,5 @@
 import { RabbitMQQueueProvider } from "@twit2/std-library/dist/comm/providers/RabbitMqProvider"
 import { MsgQueue, SessionVerifierMiddleware } from "@twit2/std-library";
-import { prepareRPC } from "./PostsMgr";
 
 /**
  * Initializes the worker.

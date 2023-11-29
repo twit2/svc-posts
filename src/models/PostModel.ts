@@ -1,4 +1,4 @@
-import mongoose, { Schema } from 'mongoose'
+import mongoose from 'mongoose'
 import { Limits } from '@twit2/std-library';
 import { Post } from '../types/Post';
 
