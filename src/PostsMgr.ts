@@ -46,6 +46,16 @@ const getPostSchema = {
     additionalProperties: false
 };
 
+const getRepliesSchema = {
+    type: "object",
+    properties: {
+        page: { type: "number" },
+        postId: { type: "string", minLength: Limits.general.hard.min, maxLength:Limits.general.hard.max }
+    },
+    required: ["page", "postId"],
+    additionalProperties: false
+};
+
 /**
  * Prepares the RPC client.
  */
@@ -73,7 +83,7 @@ async function createPost(op: PostInsertOp): Promise<Post> {
 
     // Check if this is a comment
     if(op.replyToId !== undefined) {
-        if(!getPostById(op.replyToId)) // Target post must exist
+        if(!(await getPostById(op.replyToId))) // Target post must exist
             throw APIError.fromCode(APIResponseCodes.NOT_FOUND);
     }
 
@@ -103,7 +113,7 @@ async function getPosts(op: PostRetrieveOp): Promise<PaginatedAPIData<Post>> {
  */
 async function getReplies(op: ReplyRetrieveOp): Promise<PaginatedAPIData<Post>> {
     // Validate the schema to ensure data is correct
-    if(!ajv.validate(getPostSchema, op))
+    if(!ajv.validate(getRepliesSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
     return {

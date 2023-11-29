@@ -236,7 +236,7 @@ describe('post manager tests', () => {
         throw new Error('The edit succeeded :(');
     });
 
-    // Reject overflown edit
+    // Post reply to post
     test('post reply to post', async() => {
         const post = await PostsMgr.createPost({
             textContent: 'this post will have replies',
@@ -250,6 +250,30 @@ describe('post manager tests', () => {
         })
     
         expect(reply.replyToId).toBe(post.id);
+    });
+
+    // Get replies
+    test('get post replies', async() => {
+        const post = await PostsMgr.createPost({
+            textContent: 'this post will have replies 2',
+            authorId: MOCK_USER1
+        });
+
+        for(let x = 0; x < TEST_POST_COUNT; x++) {
+            await PostsMgr.createPost({
+                textContent: `This is reply #${x}`,
+                authorId: MOCK_USER2,
+                replyToId: post.id
+            });
+        }
+
+        // Get replies
+        let replies = await PostsMgr.getReplies({ page: 0, postId: post.id });
+        expect(replies.data).not.toBeUndefined();
+        expect(replies.data?.length).toBe(TEST_POST_COUNT);
+
+        for(let reply of replies.data ?? [])
+            expect(reply.replyToId).toBe(post.id);
     });
 
     afterAll(async() => {
