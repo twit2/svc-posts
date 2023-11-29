@@ -6,6 +6,7 @@ import { PostsStore } from './PostsStore';
 import { handleCreatePost } from './routes/CreatePost';
 import { handleGetPosts } from './routes/GetPosts';
 import { handleGetOnePost } from './routes/GetOnePost';
+import { handleDeletePost } from './routes/DeletePost';
 require('express-async-errors');
 
 // Load ENV parameters
@@ -24,6 +25,7 @@ app.use(SessionVerifierMiddleware.handle);
 // Routes
 // ------------------------------------------------
 app.post('/', handleCreatePost);
+app.delete('/:id', handleDeletePost);
 app.get('/view/:id', handleGetOnePost);
 app.get('/:user/:page', handleGetPosts);
 app.get('/@me', handleGetPosts);

@@ -5,6 +5,7 @@ import { Post } from "./types/Post";
 import { RPCClient } from "@twit2/std-library/dist/comm/rpc/RPCClient";
 import { PostRetrieveOp } from "./op/PostRetrieveOp";
 import Ajv from "ajv";
+import { PostDeleteOp } from "./op/PostDeleteOp";
 
 let authRPC : RPCClient;
 
@@ -85,9 +86,33 @@ async function getPostById(id: string) {
     return PostsStore.findPostById(id);
 }
 
+/**
+ * Deletes a post.
+ * @param id The ID of the post to get.
+ */
+async function deletePost(op: PostDeleteOp) {
+    const post = await getPostById(op.id);
+
+    if(!post)
+        throw APIError.fromCode(APIResponseCodes.NOT_FOUND);
+
+    // Check if post belongs to user
+    if(post.authorId !== op.authorId)
+        throw APIError.fromCode(APIResponseCodes.ACCESS_DENIED);
+
+    // We are dealing with a comment
+    if(post.replyToId != null) {
+        // TODO check if post is part of a comment thread
+        // This is important because we must reattach the broken parts after comment removal.
+    }
+
+    await PostsStore.deletePost(op.id);
+}
+
 export const PostsMgr = {
     prepareRPC,
     createPost,
+    deletePost,
     getPosts,
     getPostById
 }

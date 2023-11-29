@@ -32,6 +32,14 @@ async function createPost(post: Post) {
 }
 
 /**
+ * Deletes a post.
+ * @param id The id of the post to delete.
+ */
+async function deletePost(id: string) {
+    return await PostModel.find({ id }).deleteOne();
+}
+
+/**
  * Finds a post by ID.
  * @param id The id to use.
  */
@@ -50,5 +58,6 @@ export const PostsStore = {
     getPosts,
     init,
     createPost,
+    deletePost,
     findPostById
 }
