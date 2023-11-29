@@ -3,9 +3,14 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { PostModel } from "./models/PostModel";
 import { PostsMgr } from "./PostsMgr";
 import { Limits } from "@twit2/std-library";
+import { Post } from "./types/Post";
 
 describe('post manager tests', () => {
     let mongoServer: MongoMemoryServer;
+    let testPostId: string = "";
+    const TEST_POST_COUNT = 10;
+    const MOCK_USER1 = "__test1__";
+    const MOCK_USER2 = "__test2__";
 
     beforeAll(async()=> {
         // Setup server
@@ -20,14 +25,48 @@ describe('post manager tests', () => {
     test('create valid post', async() => {
         const post = await PostsMgr.createPost({
             textContent: 'Hello, world!',
-            authorId: '__test__'
+            authorId: MOCK_USER1
         });
 
+        expect(post.id).not.toBeUndefined();
         expect(post.textContent).toBe('Hello, world!');
-        expect(post.authorId).toBe('__test__');
+        expect(post.authorId).toBe(MOCK_USER1);
         expect(post.datePosted).not.toBeUndefined();
         expect(post.replyToId).toBeUndefined();
         expect(post.dateEdited).toBeUndefined();
+
+        testPostId = post.id;
+    });
+
+    // Gets a valid post
+    test('get valid post', async ()=> {
+        const post = await PostsMgr.getPostById(testPostId) as Post;
+
+        expect(post).not.toBeUndefined();
+        expect(post.id).not.toBeUndefined();
+        expect(post.textContent).toBe('Hello, world!');
+        expect(post.authorId).toBe(MOCK_USER1);
+        expect(post.datePosted).not.toBeUndefined();
+        expect(post.replyToId).toBeUndefined();
+        expect(post.dateEdited).toBeUndefined();
+    });
+
+    // Creates a post
+    test('create valid posts', async() => {
+        for(let x = 0; x < TEST_POST_COUNT; x++) {
+            await PostsMgr.createPost({
+                textContent: `Hello world ${x}`,
+                authorId: MOCK_USER1
+            });
+        }
+    });
+
+    // Gets valid posts
+    test('get valid posts', async ()=> {
+        const posts = await PostsMgr.getPosts({ page: 0, userId: MOCK_USER1 });
+
+        expect(posts.data).not.toBeUndefined();
+        expect(posts.data?.length).toBe(TEST_POST_COUNT);
     });
 
     // Reject empty post
@@ -35,7 +74,7 @@ describe('post manager tests', () => {
         try {
             await PostsMgr.createPost({
                 textContent: '',
-                authorId: '__test__'
+                authorId: MOCK_USER1
             });
         } catch(e) {
             return;
@@ -49,7 +88,7 @@ describe('post manager tests', () => {
         try {
             await PostsMgr.createPost({
                 textContent: 'a'.repeat(Limits.posts.tcontent.max + 1),
-                authorId: '__test__'
+                authorId: MOCK_USER1
             });
         } catch(e) {
             return;
@@ -76,12 +115,12 @@ describe('post manager tests', () => {
     test('must delete post', async() => {
         const post = await PostsMgr.createPost({
             textContent: 'hello world',
-            authorId: '__test__'
+            authorId: MOCK_USER1
         });
 
         await PostsMgr.deletePost({
             id: post.id,
-            authorId: '__test__'
+            authorId: MOCK_USER1
         });
 
         expect(await PostsMgr.getPostById(post.id)).toBeNull();
@@ -92,12 +131,12 @@ describe('post manager tests', () => {
         try {
             const post = await PostsMgr.createPost({
                 textContent: 'hello world',
-                authorId: '__testa__'
+                authorId: MOCK_USER2
             });
 
             await PostsMgr.deletePost({
                 id: post.id,
-                authorId: '__test__'
+                authorId: MOCK_USER1
             });
         } catch(e) {
             return;
@@ -111,7 +150,7 @@ describe('post manager tests', () => {
         try {
             await PostsMgr.deletePost({
                 id: '12345',
-                authorId: '__test__'
+                authorId: MOCK_USER1
             });
         } catch(e) {
             return
@@ -124,11 +163,11 @@ describe('post manager tests', () => {
     test('must be able to edit post', async() => {
         const post = await PostsMgr.createPost({
             textContent: 'hello world',
-            authorId: '__test__'
+            authorId: MOCK_USER1
         });
 
         const updatedPost = await PostsMgr.editPost({
-            authorId: '__test__',
+            authorId: MOCK_USER1,
             id: post.id,
             textContent: "Updated Text"
         });
@@ -142,11 +181,11 @@ describe('post manager tests', () => {
         try {
             const post = await PostsMgr.createPost({
                 textContent: 'hello world',
-                authorId: '__test__'
+                authorId: MOCK_USER1
             });
     
             await PostsMgr.editPost({
-                authorId: '__test__',
+                authorId: MOCK_USER1,
                 id: post.id,
                 textContent: ""
             });
@@ -162,11 +201,11 @@ describe('post manager tests', () => {
         try {
             const post = await PostsMgr.createPost({
                 textContent: 'hello world',
-                authorId: '__test__'
+                authorId: MOCK_USER1
             });
     
             await PostsMgr.editPost({
-                authorId: '__testa__',
+                authorId: MOCK_USER2,
                 id: post.id,
                 textContent: ""
             });
@@ -182,11 +221,11 @@ describe('post manager tests', () => {
         try {
             const post = await PostsMgr.createPost({
                 textContent: 'hello world',
-                authorId: '__test__'
+                authorId: MOCK_USER1
             });
     
             await PostsMgr.editPost({
-                authorId: '__test__',
+                authorId: MOCK_USER1,
                 id: post.id,
                 textContent: "yes".repeat(Limits.posts.tcontent.max)
             });
@@ -195,6 +234,22 @@ describe('post manager tests', () => {
         }
 
         throw new Error('The edit succeeded :(');
+    });
+
+    // Reject overflown edit
+    test('post reply to post', async() => {
+        const post = await PostsMgr.createPost({
+            textContent: 'this post will have replies',
+            authorId: MOCK_USER1
+        });
+
+        const reply = await PostsMgr.createPost({
+            textContent: 'reply',
+            authorId: MOCK_USER2,
+            replyToId: post.id
+        })
+    
+        expect(reply.replyToId).toBe(post.id);
     });
 
     afterAll(async() => {

@@ -7,6 +7,7 @@ import { PostRetrieveOp } from "./op/PostRetrieveOp";
 import Ajv from "ajv";
 import { PostDeleteOp } from "./op/PostDeleteOp";
 import { PostEditOp } from "./op/PostUpdateOp";
+import { ReplyRetrieveOp } from "./op/ReplyRetrieveOp";
 
 let authRPC : RPCClient;
 
@@ -70,6 +71,12 @@ async function createPost(op: PostInsertOp): Promise<Post> {
         id: generateId({ workerId: process.pid, procId: process.ppid })
     };
 
+    // Check if this is a comment
+    if(op.replyToId !== undefined) {
+        if(!getPostById(op.replyToId)) // Target post must exist
+            throw APIError.fromCode(APIResponseCodes.NOT_FOUND);
+    }
+
     await PostsStore.createPost(post);
     return post;
 }
@@ -87,6 +94,22 @@ async function getPosts(op: PostRetrieveOp): Promise<PaginatedAPIData<Post>> {
         currentPage: -1,
         pageSize: PAGE_SIZE,
         data: await PostsStore.getPosts(op.page, PAGE_SIZE, op.userId)
+    };
+}
+
+/**
+ * Gets replies.
+ * @param op The operation params.
+ */
+async function getReplies(op: ReplyRetrieveOp): Promise<PaginatedAPIData<Post>> {
+    // Validate the schema to ensure data is correct
+    if(!ajv.validate(getPostSchema, op))
+        throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
+
+    return {
+        currentPage: -1,
+        pageSize: PAGE_SIZE,
+        data: await PostsStore.getReplies(op.page, PAGE_SIZE, op.postId)
     };
 }
 
@@ -116,6 +139,7 @@ async function deletePost(op: PostDeleteOp) {
     if(post.replyToId != null) {
         // TODO check if post is part of a comment thread
         // This is important because we must reattach the broken parts after comment removal.
+        throw new Error('Not implemented.');
     }
 
     await PostsStore.deletePost(op.id);
@@ -146,6 +170,7 @@ export const PostsMgr = {
     createPost,
     deletePost,
     getPosts,
+    getReplies,
     editPost,
     getPostById
 }

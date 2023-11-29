@@ -57,7 +57,7 @@ async function getPosts(page: number, limit: number, userId: string) {
 /**
  * Gets comments.
  */
-async function getPostComments(page: number, limit: number, postId: string) {
+async function getReplies(page: number, limit: number, postId: string) {
     return await PostModel.find({ replyToId: postId }).sort({ datePosted: -1 }).skip(page * limit).limit(limit);
 }
 
@@ -85,6 +85,6 @@ export const PostsStore = {
     createPost,
     deletePost,
     editPost,
-    getPostComments,
+    getReplies,
     findPostById
 }
