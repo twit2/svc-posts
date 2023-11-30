@@ -8,6 +8,7 @@ import Ajv from "ajv";
 import { PostDeleteOp } from "./op/PostDeleteOp";
 import { PostEditOp } from "./op/PostUpdateOp";
 import { ReplyRetrieveOp } from "./op/ReplyRetrieveOp";
+import { GenericPagedOp } from "./op/GenericPagedOp";
 
 let authRPC : RPCClient;
 
@@ -45,6 +46,15 @@ const getPostSchema = {
     required: ["page", "userId"],
     additionalProperties: false
 };
+
+const getLatestPostSchema = {
+    type: "object",
+    properties: {
+        page: { type: "number" }
+    },
+    required: ["page"],
+    additionalProperties: false
+}
 
 const getRepliesSchema = {
     type: "object",
@@ -104,6 +114,22 @@ async function getPosts(op: PostRetrieveOp): Promise<PaginatedAPIData<Post>> {
         currentPage: -1,
         pageSize: PAGE_SIZE,
         data: await PostsStore.getPosts(op.page, PAGE_SIZE, op.userId)
+    };
+}
+
+/**
+ * Gets the latest posts.
+ * @param op The operation params.
+ */
+async function getLatestPosts(op: GenericPagedOp): Promise<PaginatedAPIData<Post>> {
+    // Validate the schema to ensure data is correct
+    if(!ajv.validate(getLatestPostSchema, op))
+        throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
+
+    return {
+        currentPage: -1,
+        pageSize: PAGE_SIZE,
+        data: await PostsStore.getLatestPosts(op.page, PAGE_SIZE)
     };
 }
 
@@ -180,6 +206,7 @@ export const PostsMgr = {
     createPost,
     deletePost,
     getPosts,
+    getLatestPosts,
     getReplies,
     editPost,
     getPostById

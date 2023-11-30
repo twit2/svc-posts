@@ -55,6 +55,13 @@ async function getPosts(page: number, limit: number, userId: string) {
 }
 
 /**
+ * Get latest posts.
+ */
+async function getLatestPosts(page: number, limit: number) {
+    return await PostModel.find({ replyToId: undefined }).sort({ datePosted: -1 }).skip(page * limit).limit(limit);
+}
+
+/**
  * Gets comments.
  */
 async function getReplies(page: number, limit: number, postId: string) {
@@ -81,6 +88,7 @@ async function editPost(id: string, textContent: string) {
 
 export const PostsStore = {
     getPosts,
+    getLatestPosts,
     init,
     createPost,
     deletePost,

@@ -69,6 +69,14 @@ describe('post manager tests', () => {
         expect(posts.data?.length).toBe(TEST_POST_COUNT);
     });
 
+    // Gets latest posts
+    test('get latest posts', async ()=> {
+        const posts = await PostsMgr.getLatestPosts({ page: 0 });
+
+        expect(posts.data).not.toBeUndefined();
+        expect(posts.data?.length).toBe(TEST_POST_COUNT);
+    });
+
     // Reject empty post
     test('must reject empty post', async() => {
         try {
