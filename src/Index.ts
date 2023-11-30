@@ -18,7 +18,7 @@ configDotenv();
 // Setup
 // ------------------------------------------------
 const app = express();
-const port = process.env.HTTP_PORT ?? 3201;
+const port = process.env.HTTP_PORT ?? 3202;
 
 app.use(express.json());
 
