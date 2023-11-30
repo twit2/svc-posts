@@ -8,7 +8,7 @@ import Ajv from "ajv";
 import { PostDeleteOp } from "./op/PostDeleteOp";
 import { PostEditOp } from "./op/PostUpdateOp";
 import { ReplyRetrieveOp } from "./op/ReplyRetrieveOp";
-import { GenericPagedOp } from "./op/GenericPagedOp";
+import { GenericPagedOp } from "@twit2/std-library";
 
 let authRPC : RPCClient;
 

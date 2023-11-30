@@ -1,7 +1,6 @@
-import { APIRespConstructor, WithT2Session } from "@twit2/std-library";
+import { APIRespConstructor, GenericPagedOp } from "@twit2/std-library";
 import { NextFunction, Request, Response } from "express";
 import { PostsMgr } from "../PostsMgr";
-import { GenericPagedOp } from "../op/GenericPagedOp";
 
 /**
  * Handles the latest posts retrieval route.
