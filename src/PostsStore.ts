@@ -69,6 +69,14 @@ async function getReplies(page: number, limit: number, postId: string) {
 }
 
 /**
+ * Gets the reply count for the specified post.
+ * @param postId The ID of the post to get the count for.
+ */
+async function getReplyCount(postId: string) {
+    return await PostModel.count({ replyToId: postId });
+}
+
+/**
  * Edits the text content of the post.
  * @param id The ID of the post to edit
  * @param textContent The new content to place.
@@ -94,5 +102,6 @@ export const PostsStore = {
     deletePost,
     editPost,
     getReplies,
+    getReplyCount,
     findPostById
 }

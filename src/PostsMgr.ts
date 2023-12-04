@@ -9,6 +9,7 @@ import { PostDeleteOp } from "./op/PostDeleteOp";
 import { PostEditOp } from "./op/PostUpdateOp";
 import { ReplyRetrieveOp } from "./op/ReplyRetrieveOp";
 import { GenericPagedOp } from "@twit2/std-library";
+import {  WithPostStatistics } from "./types/WithPostStatistics";
 
 let authRPC : RPCClient;
 

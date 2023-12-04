@@ -5,4 +5,4 @@ export interface Post {
     replyToId?: string;
     datePosted: Date;
     dateEdited?: Date;
-}
+};
