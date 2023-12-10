@@ -15,7 +15,7 @@ async function init(url: string) {
 
     // Setup rpc client
     const rpcc = new MsgQueue.rpc.RPCClient(mq);
-    await rpcc.init('t2a-session-verif');
+    await rpcc.init('t2-auth-service');
     await SessionVerifierMiddleware.init(rpcc);
 }
 
