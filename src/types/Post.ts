@@ -1,3 +1,5 @@
+import { WithPostStatistics } from "./WithPostStatistics";
+
 export interface Post {
     id: string;
     authorId: string;
@@ -6,3 +8,5 @@ export interface Post {
     datePosted: Date;
     dateEdited?: Date;
 };
+
+export type EnhancedPost = Post & WithPostStatistics;
