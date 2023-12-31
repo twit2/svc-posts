@@ -114,10 +114,15 @@ async function getPosts(op: PostRetrieveOp): Promise<PaginatedAPIData<EnhancedPo
     if(!ajv.validate(getPostSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
+    const eps : EnhancedPost[] = [];
+
+    for(let post of await PostsStore.getPosts(op.page, PAGE_SIZE, op.userId))
+        eps.push(await enhancePost(post));
+
     return {
         currentPage: -1,
         pageSize: PAGE_SIZE,
-        data: (await PostsStore.getPosts(op.page, PAGE_SIZE, op.userId)).map((x) => enhancePost(x.toJSON()))
+        data: eps
     };
 }
 
@@ -130,10 +135,15 @@ async function getLatestPosts(op: GenericPagedOp): Promise<PaginatedAPIData<Enha
     if(!ajv.validate(getLatestPostSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
+    const eps : EnhancedPost[] = [];
+
+    for(let post of await PostsStore.getLatestPosts(op.page, PAGE_SIZE))
+        eps.push(await enhancePost(post));
+
     return {
         currentPage: -1,
         pageSize: PAGE_SIZE,
-        data: (await PostsStore.getLatestPosts(op.page, PAGE_SIZE)).map((x) => enhancePost(x.toJSON()))
+        data: eps
     };
 }
 
@@ -146,10 +156,15 @@ async function getReplies(op: ReplyRetrieveOp): Promise<PaginatedAPIData<Enhance
     if(!ajv.validate(getRepliesSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
+    const eps : EnhancedPost[] = [];
+
+    for(let post of await PostsStore.getReplies(op.page, PAGE_SIZE, op.postId))
+        eps.push(await enhancePost(post));
+
     return {
         currentPage: -1,
         pageSize: PAGE_SIZE,
-        data: (await PostsStore.getReplies(op.page, PAGE_SIZE, op.postId)).map((x) => enhancePost(x.toJSON()))
+        data: eps
     };
 }
 
@@ -171,7 +186,7 @@ async function getEnhancedPost(id: string) {
     if(!p)
         throw APIError.fromCode(APIResponseCodes.NOT_FOUND);
 
-    return enhancePost(p);
+    return await enhancePost(p);
 }
 
 /**
@@ -222,7 +237,7 @@ async function editPost(op: PostEditOp): Promise<EnhancedPost> {
  * Enhances a post.
  * @param p The post to enhance.
  */
-function enhancePost(p: Post) : EnhancedPost {
+async function enhancePost(p: Post) : Promise<EnhancedPost> {
     if(!p)
         throw new Error("Cannot enhance null post.");
 
@@ -231,7 +246,7 @@ function enhancePost(p: Post) : EnhancedPost {
         ...{
             stats: {
                 likes: 0,
-                replies: 0
+                replies: await PostsStore.getReplyCount(p.id) ?? 0
             }
         }
     };

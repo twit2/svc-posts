@@ -1,25 +1,12 @@
-import mongoose from "mongoose";
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import { PostModel } from "./models/PostModel";
 import { PostsMgr } from "./PostsMgr";
 import { Limits } from "@twit2/std-library";
 import { Post } from "./types/Post";
 
 describe('post manager tests', () => {
-    let mongoServer: MongoMemoryServer;
     let testPostId: string = "";
     const TEST_POST_COUNT = 10;
     const MOCK_USER1 = "__test1__";
     const MOCK_USER2 = "__test2__";
-
-    beforeAll(async()=> {
-        // Setup server
-        mongoServer = await MongoMemoryServer.create();
-        await mongoose.connect(mongoServer.getUri(), { dbName: "t2-auth-test" });
-
-        // Init models
-        await PostModel.init();
-    });
 
     // Creates a post
     test('create valid post', async() => {
@@ -282,10 +269,5 @@ describe('post manager tests', () => {
 
         for(let reply of replies.data ?? [])
             expect(reply.replyToId).toBe(post.id);
-    });
-
-    afterAll(async() => {
-        await mongoose.disconnect();
-        await mongoServer.stop();
     });
 });

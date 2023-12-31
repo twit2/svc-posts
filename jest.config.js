@@ -3,6 +3,7 @@ module.exports = {
     preset: 'ts-jest',
     testEnvironment: 'node',
     collectCoverage: true,
+    testRegex: '(int|unit).test.ts',
     collectCoverageFrom: [
         "src/**/*.ts"
     ],
@@ -14,6 +15,8 @@ module.exports = {
         "src/types",
         "src/rpc",
         "src/Index.ts",
-        "src/PostsWorker.ts"
+        "src/PostsWorker.ts",
+        "src/PostsMgr.test.ts",
+        ".mock.ts"
     ]
 };
