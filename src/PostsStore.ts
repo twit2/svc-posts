@@ -5,6 +5,7 @@ import { Post } from "./types/Post";
 /**
  * Initializes the post store.
  */
+/* istanbul ignore next */
 async function init() {
     if(process.env.DB_URL == null)
         throw new Error("No database URL defined - is your .env file correct?");
@@ -27,8 +28,8 @@ async function init() {
  * Creates a post.
  * @param post The post to push.
  */
-async function createPost(post: Post) {
-    await new PostModel(post).save();
+async function createPost(post: Post) : Promise<Post> {
+    return (await new PostModel(post).save()).toJSON();
 }
 
 /**
@@ -36,7 +37,7 @@ async function createPost(post: Post) {
  * @param id The id of the post to delete.
  */
 async function deletePost(id: string) {
-    return await PostModel.find({ id }).deleteOne();
+    await PostModel.find({ id }).deleteOne();
 }
 
 /**
@@ -44,35 +45,40 @@ async function deletePost(id: string) {
  * @param id The id to use.
  */
 async function findPostById(id: string): Promise<Post | null> {
-    return await PostModel.findOne({ id }).exec();
+    const post = await PostModel.findOne({ id }).exec();
+
+    if(post)
+        return post.toJSON();
+
+    return null;
 }
 
 /**
  * Gets posts.
  */
-async function getPosts(page: number, limit: number, userId: string) {
-    return await PostModel.find({ authorId: userId, replyToId: undefined }).sort({ datePosted: -1 }).skip(page * limit).limit(limit);
+async function getPosts(page: number, limit: number, userId: string): Promise<Post[]> {
+    return (await PostModel.find({ authorId: userId, replyToId: undefined }).sort({ datePosted: -1 }).skip(page * limit).limit(limit)).map(x => x.toJSON());
 }
 
 /**
  * Get latest posts.
  */
-async function getLatestPosts(page: number, limit: number) {
-    return await PostModel.find({ replyToId: undefined }).sort({ datePosted: -1 }).skip(page * limit).limit(limit);
+async function getLatestPosts(page: number, limit: number): Promise<Post[]> {
+    return (await PostModel.find({ replyToId: undefined }).sort({ datePosted: -1 }).skip(page * limit).limit(limit)).map(x => x.toJSON());
 }
 
 /**
  * Gets comments.
  */
-async function getReplies(page: number, limit: number, postId: string) {
-    return await PostModel.find({ replyToId: postId }).sort({ datePosted: -1 }).skip(page * limit).limit(limit);
+async function getReplies(page: number, limit: number, postId: string): Promise<Post[]> {
+    return (await PostModel.find({ replyToId: postId }).sort({ datePosted: -1 }).skip(page * limit).limit(limit)).map(x => x.toJSON());
 }
 
 /**
  * Gets the reply count for the specified post.
  * @param postId The ID of the post to get the count for.
  */
-async function getReplyCount(postId: string) {
+async function getReplyCount(postId: string): Promise<number> {
     return await PostModel.count({ replyToId: postId });
 }
 
@@ -81,7 +87,7 @@ async function getReplyCount(postId: string) {
  * @param id The ID of the post to edit
  * @param textContent The new content to place.
  */
-async function editPost(id: string, textContent: string) {
+async function editPost(id: string, textContent: string): Promise<Post> {
     const post = await PostModel.findOne({ id });
     
     if(!post)

@@ -1,15 +1,15 @@
 import { APIError, APIResponseCodes, Limits, PaginatedAPIData, generateId } from "@twit2/std-library";
+import { FeedAlgorithm } from './feed/FeedAlgorithm';
 import { PostsStore } from "./PostsStore";
 import { PostInsertOp } from "./op/PostInsertOp";
-import { Post } from "./types/Post";
+import { EnhancedPost, Post } from "./types/Post";
 import { RPCClient } from "@twit2/std-library/dist/comm/rpc/RPCClient";
 import { PostRetrieveOp } from "./op/PostRetrieveOp";
-import Ajv from "ajv";
 import { PostDeleteOp } from "./op/PostDeleteOp";
 import { PostEditOp } from "./op/PostUpdateOp";
 import { ReplyRetrieveOp } from "./op/ReplyRetrieveOp";
 import { GenericPagedOp } from "@twit2/std-library";
-import {  WithPostStatistics } from "./types/WithPostStatistics";
+import Ajv from "ajv";
 
 let authRPC : RPCClient;
 
@@ -70,6 +70,7 @@ const getRepliesSchema = {
 /**
  * Prepares the RPC client.
  */
+/* istanbul ignore next */
 export async function prepareRPC(rpcc: RPCClient) {
     authRPC = rpcc;
 }
@@ -78,18 +79,22 @@ export async function prepareRPC(rpcc: RPCClient) {
  * Creates a new post.
  * @param op The insertion operation parameters.
  */
-async function createPost(op: PostInsertOp): Promise<Post> {
+async function createPost(op: PostInsertOp): Promise<EnhancedPost> {
     // Validate the schema to ensure data is correct
     if(!ajv.validate(createPostSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
     // Construct the post
-    const post : Post = {
+    const post : EnhancedPost = {
         authorId: op.authorId,
         textContent: op.textContent,
         replyToId: op.replyToId,
         datePosted: new Date(),
-        id: generateId({ workerId: process.pid, procId: process.ppid })
+        id: generateId({ workerId: process.pid, procId: process.ppid }),
+        stats: {
+            likes: 0,
+            replies: 0
+        }
     };
 
     // Check if this is a comment
@@ -106,15 +111,20 @@ async function createPost(op: PostInsertOp): Promise<Post> {
  * Gets posts.
  * @param op The operation params.
  */
-async function getPosts(op: PostRetrieveOp): Promise<PaginatedAPIData<Post>> {
+async function getPosts(op: PostRetrieveOp): Promise<PaginatedAPIData<EnhancedPost>> {
     // Validate the schema to ensure data is correct
     if(!ajv.validate(getPostSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
+    const eps : EnhancedPost[] = [];
+
+    for(let post of await PostsStore.getPosts(op.page, PAGE_SIZE, op.userId))
+        eps.push(await enhancePost(post));
+
     return {
         currentPage: -1,
         pageSize: PAGE_SIZE,
-        data: await PostsStore.getPosts(op.page, PAGE_SIZE, op.userId)
+        data: eps
     };
 }
 
@@ -122,15 +132,20 @@ async function getPosts(op: PostRetrieveOp): Promise<PaginatedAPIData<Post>> {
  * Gets the latest posts.
  * @param op The operation params.
  */
-async function getLatestPosts(op: GenericPagedOp): Promise<PaginatedAPIData<Post>> {
+async function getLatestPosts(op: GenericPagedOp): Promise<PaginatedAPIData<EnhancedPost>> {
     // Validate the schema to ensure data is correct
     if(!ajv.validate(getLatestPostSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
+    const eps : EnhancedPost[] = [];
+
+    for(let post of await PostsStore.getLatestPosts(op.page, PAGE_SIZE))
+        eps.push(await enhancePost(post));
+
     return {
         currentPage: -1,
         pageSize: PAGE_SIZE,
-        data: await PostsStore.getLatestPosts(op.page, PAGE_SIZE)
+        data: eps
     };
 }
 
@@ -138,15 +153,20 @@ async function getLatestPosts(op: GenericPagedOp): Promise<PaginatedAPIData<Post
  * Gets replies.
  * @param op The operation params.
  */
-async function getReplies(op: ReplyRetrieveOp): Promise<PaginatedAPIData<Post>> {
+async function getReplies(op: ReplyRetrieveOp): Promise<PaginatedAPIData<EnhancedPost>> {
     // Validate the schema to ensure data is correct
     if(!ajv.validate(getRepliesSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
+    const eps : EnhancedPost[] = [];
+
+    for(let post of await PostsStore.getReplies(op.page, PAGE_SIZE, op.postId))
+        eps.push(await enhancePost(post));
+
     return {
         currentPage: -1,
         pageSize: PAGE_SIZE,
-        data: await PostsStore.getReplies(op.page, PAGE_SIZE, op.postId)
+        data: eps
     };
 }
 
@@ -155,7 +175,20 @@ async function getReplies(op: ReplyRetrieveOp): Promise<PaginatedAPIData<Post>> 
  * @param id The ID of the post to get.
  */
 async function getPostById(id: string) {
-    return PostsStore.findPostById(id);
+    return await PostsStore.findPostById(id);
+}
+
+/**
+ * Gets an enhanced post.
+ * @param id The ID of the post to get.
+ */
+async function getEnhancedPost(id: string) {
+    const p = await getPostById(id);
+
+    if(!p)
+        throw APIError.fromCode(APIResponseCodes.NOT_FOUND);
+
+    return await enhancePost(p);
 }
 
 /**
@@ -186,7 +219,7 @@ async function deletePost(op: PostDeleteOp) {
  * Edits a post.
  * @param op The operation.
  */
-async function editPost(op: PostEditOp) {
+async function editPost(op: PostEditOp): Promise<EnhancedPost> {
     const post = await getPostById(op.id);
 
     if(!post)
@@ -199,7 +232,34 @@ async function editPost(op: PostEditOp) {
     if(!ajv.validate(updatePostSchema, op))
         throw APIError.fromCode(APIResponseCodes.INVALID_REQUEST_BODY);
 
-    return await PostsStore.editPost(op.id, op.textContent);
+    return enhancePost(await PostsStore.editPost(op.id, op.textContent));
+}
+
+/**
+ * Enhances a post.
+ * @param p The post to enhance.
+ */
+async function enhancePost(p: Post) : Promise<EnhancedPost> {
+    if(!p)
+        throw new Error("Cannot enhance null post.");
+
+    return {
+        ...p,
+        ...{
+            stats: {
+                likes: 0,
+                replies: await PostsStore.getReplyCount(p.id) ?? 0
+            }
+        }
+    };
+}
+
+/**
+ * Gets the user's feed.
+ * @param op DTO for feed.
+ */
+async function getFeed(op: PostRetrieveOp) {
+    return await FeedAlgorithm.computePage(op.userId, op.page);
 }
 
 export const PostsMgr = {
@@ -207,8 +267,11 @@ export const PostsMgr = {
     createPost,
     deletePost,
     getPosts,
+    getFeed,
     getLatestPosts,
     getReplies,
     editPost,
-    getPostById
+    getPostById,
+    enhancePost,
+    getEnhancedPost
 }

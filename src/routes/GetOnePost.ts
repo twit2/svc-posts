@@ -15,6 +15,6 @@ export async function handleGetOnePost(req: Request, res: Response, next: NextFu
         throw new Error("Invalid post ID.");
 
     res.contentType('json');
-    const posts = await PostsMgr.getPostById(targetId);
-    res.send(APIRespConstructor.success(posts));
+    const post = await PostsMgr.getEnhancedPost(targetId);
+    res.send(APIRespConstructor.success(post));
 }
