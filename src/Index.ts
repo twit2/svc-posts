@@ -29,7 +29,7 @@ app.use(SessionVerifierMiddleware.handle);
 // Routes
 // ------------------------------------------------
 app.get('/latest/:page', handleGetLatestPosts);
-app.get('/feed', handleGetFeed);
+app.get('/feed/:page', handleGetFeed);
 app.post('/', handleCreatePost);
 app.delete('/:id', handleDeletePost);
 app.patch('/:id', handlePostEdit);
