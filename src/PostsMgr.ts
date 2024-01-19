@@ -1,14 +1,15 @@
 import { APIError, APIResponseCodes, Limits, PaginatedAPIData, generateId } from "@twit2/std-library";
+import { FeedAlgorithm } from './feed/FeedAlgorithm';
 import { PostsStore } from "./PostsStore";
 import { PostInsertOp } from "./op/PostInsertOp";
 import { EnhancedPost, Post } from "./types/Post";
 import { RPCClient } from "@twit2/std-library/dist/comm/rpc/RPCClient";
 import { PostRetrieveOp } from "./op/PostRetrieveOp";
-import Ajv from "ajv";
 import { PostDeleteOp } from "./op/PostDeleteOp";
 import { PostEditOp } from "./op/PostUpdateOp";
 import { ReplyRetrieveOp } from "./op/ReplyRetrieveOp";
 import { GenericPagedOp } from "@twit2/std-library";
+import Ajv from "ajv";
 
 let authRPC : RPCClient;
 
@@ -69,6 +70,7 @@ const getRepliesSchema = {
 /**
  * Prepares the RPC client.
  */
+/* istanbul ignore next */
 export async function prepareRPC(rpcc: RPCClient) {
     authRPC = rpcc;
 }
@@ -252,11 +254,20 @@ async function enhancePost(p: Post) : Promise<EnhancedPost> {
     };
 }
 
+/**
+ * Gets the user's feed.
+ * @param op DTO for feed.
+ */
+async function getFeed(op: PostRetrieveOp) {
+    return await FeedAlgorithm.computePage(op.userId, op.page);
+}
+
 export const PostsMgr = {
     prepareRPC,
     createPost,
     deletePost,
     getPosts,
+    getFeed,
     getLatestPosts,
     getReplies,
     editPost,

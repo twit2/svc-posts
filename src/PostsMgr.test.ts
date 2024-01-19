@@ -1,5 +1,5 @@
 import { PostsMgr } from "./PostsMgr";
-import { Limits } from "@twit2/std-library";
+import { Limits, TestingUtils } from "@twit2/std-library";
 import { Post } from "./types/Post";
 
 describe('post manager tests', () => {
@@ -49,6 +49,10 @@ describe('post manager tests', () => {
     });
 
     // Gets valid posts
+    test('get posts must fail without valid dto', async ()=> {
+        await TestingUtils.mustFailAsync(async()=>{await PostsMgr.getPosts({} as any)}, "posts were retrieved");
+    });
+
     test('get valid posts', async ()=> {
         const posts = await PostsMgr.getPosts({ page: 0, userId: MOCK_USER1 });
 
@@ -62,6 +66,10 @@ describe('post manager tests', () => {
 
         expect(posts.data).not.toBeUndefined();
         expect(posts.data?.length).toBe(TEST_POST_COUNT);
+    });
+
+    test('get latest posts must fail without valid dto', async ()=> {
+        await TestingUtils.mustFailAsync(async()=>{await PostsMgr.getLatestPosts({} as any)}, "latest posts were retrieved");
     });
 
     // Reject empty post
@@ -171,6 +179,10 @@ describe('post manager tests', () => {
         expect(updatedPost.textContent).toBe("Updated Text");
     });
 
+    test('post edit must reject if post does not exist', async()=>{
+        await TestingUtils.mustFailAsync(async()=>{await PostsMgr.editPost({ authorId: MOCK_USER1, id: "abc", textContent: "Updated Text" });}, "post was edited");
+    });
+
     // Reject empty edit
     test('must reject empty edit', async() => {
         try {
@@ -232,7 +244,7 @@ describe('post manager tests', () => {
     });
 
     // Post reply to post
-    test('post reply to post', async() => {
+    test('post reply to post successfully', async() => {
         const post = await PostsMgr.createPost({
             textContent: 'this post will have replies',
             authorId: MOCK_USER1
@@ -245,6 +257,17 @@ describe('post manager tests', () => {
         })
     
         expect(reply.replyToId).toBe(post.id);
+    });
+
+    // Post reply must fail if post doesnt exist
+    test('post reply must fail if target post does not exist', async() => {
+        await TestingUtils.mustFailAsync(async()=>{
+            await PostsMgr.createPost({
+                textContent: 'reply',
+                authorId: MOCK_USER2,
+                replyToId: "abc"
+            })
+        }, "reply was made");
     });
 
     // Get replies
@@ -269,5 +292,20 @@ describe('post manager tests', () => {
 
         for(let reply of replies.data ?? [])
             expect(reply.replyToId).toBe(post.id);
+    });
+
+    // Get enhanced post must reject invalid post
+    test('get enhanced post: must return post that exists', async() => {
+        const post = await PostsMgr.createPost({
+            textContent: 'test post',
+            authorId: MOCK_USER2
+        });
+
+        const enhancedPost = await PostsMgr.getEnhancedPost(post.id);
+        expect(enhancedPost).not.toBeUndefined();
+    });
+
+    test('get enhanced post: must error on null post', async() => {
+        await TestingUtils.mustFailAsync(async()=>{ await PostsMgr.getEnhancedPost(null as any)}, "no error was thrown");
     });
 });
