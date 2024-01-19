@@ -17,6 +17,7 @@ module.exports = {
         "src/Index.ts",
         "src/PostsWorker.ts",
         "src/PostsMgr.test.ts",
+        "src/feed/FeedAlgorithm.ts",
         ".mock.ts"
     ]
 };
